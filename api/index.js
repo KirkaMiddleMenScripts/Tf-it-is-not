@@ -2,19 +2,28 @@ import fetch from 'node-fetch';
 import { JSDOM } from 'jsdom';
 
 export default async function handler(req, res) {
-  const { url } = req.query;
+  const { user } = req.query;
 
-  if (!url || !url.startsWith('http') || !url.includes('twitch.tv/')) {
-    return res.status(400).json({ error: 'Missing or invalid Twitch ?url=' });
+  if (!user) {
+    return res.status(400).json({ error: 'Missing ?user=' });
   }
 
+  const username = user.toLowerCase();
+  const twitchUrl = `https://www.twitch.tv/${username}`;
+  const liveCheckUrl = `${twitchUrl}/live`;
+
   try {
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent':
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ' +
-          '(KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+    // Detect if user is live by checking redirect behavior of /live
+    const liveResp = await fetch(liveCheckUrl, {
+      redirect: 'manual',
+      headers: { 'User-Agent': 'Mozilla/5.0' }
+    });
+
+    const isLive = liveResp.status === 302 && liveResp.headers.get('location')?.endsWith(`/${username}`);
+
+    // Fetch the main page to extract metadata
+    const response = await fetch(twitchUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0' }
     });
 
     const html = await response.text();
@@ -28,13 +37,10 @@ export default async function handler(req, res) {
     const ogImage = document.querySelector('meta[property="og:image"]')?.content || null;
     const favicon = document.querySelector('link[rel="icon"]')?.href || null;
 
-    // ✅ Look for "LIVE" text or live-indicating elements in page body
-    const bodyText = document.body.textContent || '';
-    const isLive = /is live|LIVE|Watch .* live/i.test(bodyText);
-
     res.status(200).json({
       success: true,
-      url,
+      user: username,
+      url: twitchUrl,
       data: {
         title,
         description,
