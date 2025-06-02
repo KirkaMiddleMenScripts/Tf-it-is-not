@@ -1,0 +1,11 @@
+{
+  "name": "webpage-to-json",
+  "version": "1.0.0",
+  "description": "Converts webpage metadata to JSON using a query parameter",
+  "main": "api/index.js",
+  "type": "module",
+  "dependencies": {
+    "jsdom": "^24.0.0",
+    "node-fetch": "^3.3.2"
+  }
+}
