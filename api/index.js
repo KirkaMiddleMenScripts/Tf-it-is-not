@@ -4,8 +4,8 @@ import { JSDOM } from 'jsdom';
 export default async function handler(req, res) {
   const { url } = req.query;
 
-  if (!url || !url.startsWith('http')) {
-    return res.status(400).json({ error: 'Missing or invalid ?url=' });
+  if (!url || !url.startsWith('http') || !url.includes('twitch.tv/')) {
+    return res.status(400).json({ error: 'Missing or invalid Twitch ?url=' });
   }
 
   try {
@@ -17,10 +17,6 @@ export default async function handler(req, res) {
       }
     });
 
-    if (!response.ok) {
-      return res.status(500).json({ error: 'Failed to fetch page', status: response.status });
-    }
-
     const html = await response.text();
     const dom = new JSDOM(html);
     const { document } = dom.window;
@@ -31,7 +27,10 @@ export default async function handler(req, res) {
     const ogDescription = document.querySelector('meta[property="og:description"]')?.content || null;
     const ogImage = document.querySelector('meta[property="og:image"]')?.content || null;
     const favicon = document.querySelector('link[rel="icon"]')?.href || null;
-    const isLive = document.querySelector('meta[property="og:video:is_live"]')?.content === 'true';
+
+    // ✅ Look for "LIVE" text or live-indicating elements in page body
+    const bodyText = document.body.textContent || '';
+    const isLive = /is live|LIVE|Watch .* live/i.test(bodyText);
 
     res.status(200).json({
       success: true,
@@ -47,6 +46,6 @@ export default async function handler(req, res) {
       }
     });
   } catch (err) {
-    res.status(500).json({ error: 'Error parsing page', details: err.message });
+    res.status(500).json({ error: 'Error fetching or parsing page', details: err.message });
   }
 }
