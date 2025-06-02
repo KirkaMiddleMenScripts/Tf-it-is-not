@@ -31,6 +31,7 @@ export default async function handler(req, res) {
     const ogDescription = document.querySelector('meta[property="og:description"]')?.content || null;
     const ogImage = document.querySelector('meta[property="og:image"]')?.content || null;
     const favicon = document.querySelector('link[rel="icon"]')?.href || null;
+    const isLive = document.querySelector('meta[property="og:video:is_live"]')?.content === 'true';
 
     res.status(200).json({
       success: true,
@@ -41,7 +42,8 @@ export default async function handler(req, res) {
         ogTitle,
         ogDescription,
         ogImage,
-        favicon
+        favicon,
+        isLive
       }
     });
   } catch (err) {
